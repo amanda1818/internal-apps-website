@@ -1,0 +1,27 @@
+{
+  "entities": {
+    "AppItem": {
+      "title": "App Item",
+      "description": "An application in the portal",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "version": { "type": "string" },
+        "date": { "type": "string" },
+        "category": { "type": "string", "enum": ["Work", "Personal"] },
+        "downloadUrl": { "type": "string" },
+        "checksum": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["name", "description", "version", "date", "category", "downloadUrl", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "apps/{appId}": {
+      "schema": "AppItem",
+      "description": "Stores all applications available for download"
+    }
+  }
+}

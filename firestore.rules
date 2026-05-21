@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { allow read, write: if false; }
+
+    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function isAdmin() { return isSignedIn() && (request.auth.token.email == 'adsamanda02@gmail.com' || request.auth.token.email == 'aadestia@gmail.com'); }
+    function isYCP() { return isSignedIn() && request.auth.token.email.matches('.*@ycp\\.com'); }
+    function existing() { return resource.data; }
+    function incoming() { return request.resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    function isValidAppItem(data) {
+      return data.keys().hasAll(['name', 'description', 'version', 'date', 'category', 'downloadUrl', 'createdAt', 'updatedAt'])
+        && data.keys().size() <= 9
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.description is string && data.description.size() <= 1000
+        && data.version is string && data.version.size() <= 50
+        && data.date is string && data.date.size() <= 50
+        && data.category is string && (data.category == 'Work' || data.category == 'Personal')
+        && data.downloadUrl is string && data.downloadUrl.size() <= 500
+        && (
+          !('checksum' in data) || (data.checksum is string && data.checksum.size() <= 128)
+        )
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /apps/{appId} {
+      allow read: if true;
+      
+      allow create: if isAdmin() 
+        && isValidId(appId)
+        && isValidAppItem(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+        
+      allow update: if isAdmin()
+        && isValidId(appId)
+        && isValidAppItem(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'version', 'date', 'category', 'downloadUrl', 'checksum', 'updatedAt'])
+        );
+        
+      allow delete: if isAdmin();
+    }
+  }
+}
