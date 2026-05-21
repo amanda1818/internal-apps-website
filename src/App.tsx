@@ -1,3 +1,4 @@
+import { GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
@@ -293,9 +294,21 @@ export default function App() {
     return app.category === activeCategory;
   });
 
-  const handleSignIn = () => {
-    signInWithPopup(auth, new GoogleAuthProvider());
-  };
+  const handleGoogleSignIn = () => {
+  signInWithPopup(auth, new GoogleAuthProvider());
+};
+
+const handleMicrosoftSignIn = () => {
+  const provider = new OAuthProvider('microsoft.com');
+  // This forces it to ask for their corporate login
+  provider.setCustomParameters({
+    tenant: 'common' 
+  });
+  signInWithPopup(auth, provider).catch(err => {
+    console.error("Login failed", err);
+    alert("Login failed. Please make sure you are using your YCP email.");
+  });
+};
 
   const handleSignOut = () => {
     signOut(auth);
