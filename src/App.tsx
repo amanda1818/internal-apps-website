@@ -392,11 +392,18 @@ const handleMicrosoftSignIn = () => {
                   Sign in with your @ycp.com email for team access.
                 </div>
                 <button 
-                  onClick={handleSignIn}
-                  className="bg-white text-slate-900 hover:bg-slate-200 text-sm font-bold py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors w-full"
+                  onClick={handleMicrosoftSignIn}
+                  className="bg-blue-600 text-white hover:bg-blue-700 text-sm font-bold py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors w-full"
                 >
                   <User className="w-4 h-4" />
-                  <span>Sign In</span>
+                  <span>Sign in with YCP</span>
+                </button>
+                <button 
+                  onClick={handleGoogleSignIn}
+                  className="bg-white text-slate-900 hover:bg-slate-200 text-sm font-bold py-2 px-4 border border-slate-200 rounded-lg flex items-center justify-center space-x-2 transition-colors w-full"
+                >
+                  <User className="w-4 h-4 text-slate-500" />
+                  <span>Sign in with Google</span>
                 </button>
               </div>
             )}
