@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
@@ -17,7 +17,6 @@ import { AppCategory, AppItem } from './types';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { collection, query, orderBy, getDocs, doc, setDoc, deleteDoc, where } from 'firebase/firestore';
 
 function AppCard({ app, isUnlocked, onUnlock, isAdmin, isYCP }: { app: AppItem; isUnlocked: boolean; onUnlock: (pwd: string) => void; isAdmin: boolean; isYCP: boolean }) {
@@ -171,6 +170,8 @@ function AppCard({ app, isUnlocked, onUnlock, isAdmin, isYCP }: { app: AppItem; 
   );
 }
 
+
+
 function UploadAppModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -262,11 +263,99 @@ function UploadAppModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function AuthModal({ onClose }: { onClose: () => void }) {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+      }
+      onClose(); // Close modal on success
+    } catch (err: any) {
+      setError(err.message.replace('Firebase: ', '')); // Show clean error
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl">
+        <h3 className="text-xl font-bold mb-4 text-center">{isLogin ? 'Sign In to Portal' : 'Create Account'}</h3>
+        
+        {error && (
+          <div className="mb-4 text-xs text-red-600 bg-red-50 p-3 rounded border border-red-100">
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+          <div>
+            <label className="block font-medium mb-1">Email</label>
+            <input 
+              required 
+              type="email" 
+              placeholder="name@ycp.com" 
+              className="w-full border border-slate-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+            />
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Password</label>
+            <input 
+              required 
+              type="password" 
+              placeholder="••••••••" 
+              className="w-full border border-slate-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+            />
+          </div>
+          <button 
+            disabled={loading} 
+            type="submit" 
+            className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold mt-2 transition-colors"
+          >
+            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
+          </button>
+        </form>
+        
+        <div className="mt-4 text-center border-t border-slate-100 pt-4">
+          <button 
+            onClick={() => { setIsLogin(!isLogin); setError(''); }} 
+            className="text-xs text-blue-600 hover:underline font-medium"
+          >
+            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+          </button>
+        </div>
+        
+        <button 
+          onClick={onClose} 
+          className="mt-4 w-full py-2 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [activeCategory, setActiveCategory] = useState<AppCategory>('All');
   const [isPersonalUnlocked, setIsPersonalUnlocked] = useState(false);
   const [user, loading] = useAuthState(auth);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
 
   const handleUnlockPersonal = (pwd: string) => {
@@ -298,17 +387,7 @@ export default function App() {
   signInWithPopup(auth, new GoogleAuthProvider());
 };
 
-const handleMicrosoftSignIn = () => {
-  const provider = new OAuthProvider('microsoft.com');
-  // This forces it to ask for their corporate login
-  provider.setCustomParameters({
-    tenant: 'common' 
-  });
-  signInWithPopup(auth, provider).catch(err => {
-    console.error("Login failed", err);
-    alert("Login failed. Please make sure you are using your YCP email.");
-  });
-};
+
 
   const handleSignOut = () => {
     signOut(auth);
@@ -392,21 +471,20 @@ const handleMicrosoftSignIn = () => {
                   Sign in with your @ycp.com email for team access.
                 </div>
                 <button 
-                  onClick={handleMicrosoftSignIn}
+                  onClick={() => setShowAuthModal(true)}
                   className="bg-blue-600 text-white hover:bg-blue-700 text-sm font-bold py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors w-full"
                 >
                   <User className="w-4 h-4" />
-                  <span>Sign in with YCP</span>
+                  <span>Email / Password</span>
                 </button>
                 <button 
                   onClick={handleGoogleSignIn}
-                  className="bg-white text-slate-900 hover:bg-slate-200 text-sm font-bold py-2 px-4 border border-slate-200 rounded-lg flex items-center justify-center space-x-2 transition-colors w-full"
+                  className="bg-white text-slate-900 hover:bg-slate-200 border border-slate-200 text-sm font-bold py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors w-full"
                 >
                   <User className="w-4 h-4 text-slate-500" />
                   <span>Sign in with Google</span>
                 </button>
-              </div>
-            )}
+              )}
           </div>
         </div>
       </aside>
@@ -436,7 +514,7 @@ const handleMicrosoftSignIn = () => {
                 </button>
               ) : (
                 <button 
-                  onClick={handleSignIn}
+                  onClick={() => setShowAuthModal(true)}
                   className="bg-blue-600 p-2 rounded-full text-white"
                 >
                   <User className="w-5 h-5" />
@@ -541,6 +619,7 @@ const handleMicrosoftSignIn = () => {
       </main>
       
       {showUploadModal && <UploadAppModal onClose={() => setShowUploadModal(false)} />}
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     </div>
   );
 }
