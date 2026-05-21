@@ -484,7 +484,7 @@ export default function App() {
                   <User className="w-4 h-4 text-slate-500" />
                   <span>Sign in with Google</span>
                 </button>
-              </div>  {/* <--- ADD THIS LINE */}
+              </div>
             )}
           </div>
         </div>
