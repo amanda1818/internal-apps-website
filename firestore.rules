@@ -22,8 +22,8 @@ service cloud.firestore {
         && (
           !('checksum' in data) || (data.checksum is string && data.checksum.size() <= 128)
         )
-        && data.createdAt is timestamp
-        && data.updatedAt is timestamp;
+        && data.createdAt is number
+        && data.updatedAt is number;
     }
 
     match /apps/{appId} {
@@ -31,15 +31,12 @@ service cloud.firestore {
       
       allow create: if isAdmin() 
         && isValidId(appId)
-        && isValidAppItem(incoming())
-        && incoming().createdAt == request.time
-        && incoming().updatedAt == request.time;
+        && isValidAppItem(incoming());
         
       allow update: if isAdmin()
         && isValidId(appId)
         && isValidAppItem(incoming())
         && incoming().createdAt == existing().createdAt
-        && incoming().updatedAt == request.time
         && (
           incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'version', 'date', 'category', 'downloadUrl', 'checksum', 'updatedAt'])
         );
